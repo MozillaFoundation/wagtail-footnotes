@@ -3,12 +3,12 @@ from django.db import models
 from modelcluster.fields import ParentalKey
 from wagtail.admin.edit_handlers import FieldPanel, InlinePanel
 from wagtail.core.fields import RichTextField
+from wagtail.core.models import TranslatableMixin
 
 from .fields import CustomUUIDField
 from .widgets import ReadonlyUUIDInput
 
-
-class Footnote(models.Model):
+class Footnote(TranslatableMixin, models.Model):
     """
     Footnote has a UUID field which is set using JavaScript on object creation
     so that it is available immediately for hardcoding a reference to the
@@ -17,17 +17,19 @@ class Footnote(models.Model):
 
     page = ParentalKey("wagtailcore.Page", related_name="footnotes")
     uuid = CustomUUIDField(
-        unique=True,
         verbose_name="ID",
         help_text="The ID of the footnote is shown in the rich text editor for "
         "reference.",
     )
     text = RichTextField(
         features=getattr(
-            settings, 
-            'WAGTAIL_FOOTNOTES_TEXT_FEATURES', 
+            settings,
+            'WAGTAIL_FOOTNOTES_TEXT_FEATURES',
             ["bold", "italic", "link"]
         )
     )
 
     panels = [FieldPanel("text"), FieldPanel("uuid", widget=ReadonlyUUIDInput)]
+
+    class Meta(TranslatableMixin.Meta):
+        verbose_name = "Translatable Footnote"
