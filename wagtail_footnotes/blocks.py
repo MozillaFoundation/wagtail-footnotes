@@ -2,7 +2,10 @@ import re
 
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
-from wagtail.core.blocks import RichTextBlock
+from wagtail import VERSION as WAGTAIL_VERSION
+from wagtail.blocks import RichTextBlock
+from wagtail.models import Page
+
 
 FIND_FOOTNOTE_TAG = re.compile(r'<footnote id="(.*?)">.*?</footnote>')
 
@@ -16,36 +19,57 @@ class RichTextBlockWithFootnotes(RichTextBlock):
     final template context.
     """
 
-    def replace_footnote_tags(self, html, context=None):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.features:
+            self.features = []
+        if "footnotes" not in self.features:
+            self.features.append("footnotes")
+
+    def replace_footnote_tags(self, value, html, context=None):
+        if context is None:
+            new_context = self.get_context(value)
+        else:
+            new_context = self.get_context(value, parent_context=dict(context))
+
+        if not isinstance(new_context.get("page"), Page):
+            return html
+
+        page = new_context["page"]
+        if not hasattr(page, "footnotes_list"):
+            page.footnotes_list = []
+        self.footnotes = {
+            str(footnote.uuid): footnote for footnote in page.footnotes.all()
+        }
+
         def replace_tag(match):
             try:
-                index = self.process_footnote(match.group(1), context["page"])
+                index = self.process_footnote(match.group(1), page)
             except (KeyError, ValidationError):
                 return ""
             else:
                 return f'<a href="#footnote-{index}" id="footnote-source-{index}"><sup>[{index}]</sup></a>'
-        return mark_safe(FIND_FOOTNOTE_TAG.sub(replace_tag, html))
+
+        # note: we return safe html
+        return mark_safe(FIND_FOOTNOTE_TAG.sub(replace_tag, html))  # noqa: S308
 
     def render(self, value, context=None):
-        if not self.get_template(context=context):
+        kwargs = {"value": value} if WAGTAIL_VERSION >= (5, 2) else {}
+
+        if not self.get_template(context=context, **kwargs):
             return self.render_basic(value, context=context)
 
         html = super().render(value, context=context)
-        return self.replace_footnote_tags(html, context=context)
+        return self.replace_footnote_tags(value, html, context=context)
 
     def render_basic(self, value, context=None):
         html = super().render_basic(value, context)
 
-        return self.replace_footnote_tags(html, context=context)
+        return self.replace_footnote_tags(value, html, context=context)
 
     def process_footnote(self, footnote_id, page):
-        footnotes = self.get_footnotes(page)
-        footnote = page.footnotes.get(uuid=footnote_id)
-        if footnote not in footnotes:
-            footnotes.append(footnote)
-        return footnotes.index(footnote) + 1
-
-    def get_footnotes(self, page):
-        if not hasattr(page, "footnotes_list"):
-            page.footnotes_list = []
-        return page.footnotes_list
+        footnote = self.footnotes[footnote_id]
+        if footnote not in page.footnotes_list:
+            page.footnotes_list.append(footnote)
+        # Add 1 to the index as footnotes are indexed starting at 1 not 0.
+        return page.footnotes_list.index(footnote) + 1

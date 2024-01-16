@@ -1,11 +1,10 @@
 import wagtail.admin.rich_text.editors.draftail.features as draftail_features
-from django.templatetags.static import static
-from django.utils.html import format_html_join
+
 from draftjs_exporter.dom import DOM
+from wagtail import hooks
 from wagtail.admin.rich_text.converters.html_to_contentstate import (
     InlineEntityElementHandler,
 )
-from wagtail.core import hooks
 
 
 @hooks.register("register_rich_text_features")
@@ -25,7 +24,7 @@ def register_footnotes_feature(features):
         feature_name,
         draftail_features.EntityFeature(
             control,
-            js = ['wagtailadmin/js/draftail.js', 'footnotes/js/footnotes.js']
+            js=["wagtailadmin/js/draftail.js", "footnotes/js/footnotes.js"],
         ),
     )
 
