@@ -3,10 +3,11 @@ from django.db import models
 from modelcluster.fields import ParentalKey
 from wagtail.admin.panels import FieldPanel
 from wagtail.fields import RichTextField
-from wagtail.core.models import TranslatableMixin
+from wagtail.models import TranslatableMixin
 
 from wagtail_footnotes.fields import CustomUUIDField
 from wagtail_footnotes.widgets import ReadonlyUUIDInput
+
 
 class Footnote(TranslatableMixin, models.Model):
     """
@@ -30,7 +31,7 @@ class Footnote(TranslatableMixin, models.Model):
     panels = [FieldPanel("text"), FieldPanel("uuid", widget=ReadonlyUUIDInput)]
 
     class Meta(TranslatableMixin.Meta):
-        unique_together = ("page", "uuid")
+        unique_together = [("page", "uuid"), ("translation_key", "locale")]
         verbose_name = "Translatable Footnote"
 
     def __str__(self):
