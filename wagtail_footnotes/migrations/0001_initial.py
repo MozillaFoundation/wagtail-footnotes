@@ -2,13 +2,14 @@
 
 import django.db.models.deletion
 import modelcluster.fields
-import wagtail.core.fields
-import wagtail_footnotes.fields
+import wagtail.fields as wagtail_fields
+
 from django.db import migrations, models
+
+import wagtail_footnotes.fields
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
@@ -36,7 +37,7 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("text", wagtail.core.fields.RichTextField()),
+                ("text", wagtail_fields.RichTextField()),
                 (
                     "page",
                     modelcluster.fields.ParentalKey(
