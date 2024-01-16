@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.db import models
 from modelcluster.fields import ParentalKey
-from wagtail.admin.edit_handlers import FieldPanel, InlinePanel
-from wagtail.core.fields import RichTextField
-from wagtail.core.models import TranslatableMixin
+from wagtail.admin.panels import FieldPanel
+from wagtail.fields import RichTextField
+from wagtail.models import TranslatableMixin
 
-from .fields import CustomUUIDField
-from .widgets import ReadonlyUUIDInput
+from wagtail_footnotes.fields import CustomUUIDField
+from wagtail_footnotes.widgets import ReadonlyUUIDInput
+
 
 class Footnote(TranslatableMixin, models.Model):
     """
@@ -23,13 +24,15 @@ class Footnote(TranslatableMixin, models.Model):
     )
     text = RichTextField(
         features=getattr(
-            settings,
-            'WAGTAIL_FOOTNOTES_TEXT_FEATURES',
-            ["bold", "italic", "link"]
+            settings, "WAGTAIL_FOOTNOTES_TEXT_FEATURES", ["bold", "italic", "link"]
         )
     )
 
     panels = [FieldPanel("text"), FieldPanel("uuid", widget=ReadonlyUUIDInput)]
 
     class Meta(TranslatableMixin.Meta):
+        unique_together = [("page", "uuid"), ("translation_key", "locale")]
         verbose_name = "Translatable Footnote"
+
+    def __str__(self):
+        return str(self.uuid)
